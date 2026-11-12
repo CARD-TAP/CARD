@@ -4,10 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CARD-TAP Digital Profile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
+    * { box-sizing: border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0f172a;
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0%, #090d16 100%);
       color: #f8fafc;
       display: flex;
       justify-content: center;
@@ -17,41 +20,82 @@
       padding: 20px;
     }
     .card {
-      background: #1e293b;
+      background: rgba(30, 41, 59, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       width: 100%;
-      max-width: 380px;
-      border-radius: 24px;
-      padding: 32px 24px;
+      max-width: 390px;
+      border-radius: 28px;
+      overflow: hidden;
       text-align: center;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    }
+    .banner {
+      height: 100px;
+      background: linear-gradient(135deg, #0284c7 0%, #38bdf8 50%, #818cf8 100%);
+    }
+    .content {
+      padding: 0 24px 32px;
+      margin-top: -52px;
     }
     .avatar {
-      width: 96px;
-      height: 96px;
+      width: 104px;
+      height: 104px;
       border-radius: 50%;
       object-fit: cover;
-      border: 3px solid #38bdf8;
-      margin-bottom: 16px;
-    }
-    h1 { font-size: 1.4rem; margin: 0 0 6px; }
-    p { font-size: 0.95rem; color: #94a3b8; margin: 0 0 24px; }
-    .btn {
-      display: block;
+      border: 4px solid #162032;
       background: #334155;
-      color: #fff;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+    h1 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      margin: 12px 0 4px;
+      letter-spacing: -0.02em;
+    }
+    .bio {
+      font-size: 0.9rem;
+      color: #94a3b8;
+      margin: 0 0 24px;
+      line-height: 1.4;
+    }
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #f8fafc;
       text-decoration: none;
-      padding: 14px;
-      border-radius: 12px;
+      padding: 14px 18px;
+      border-radius: 14px;
       margin-bottom: 12px;
       font-weight: 600;
+      font-size: 0.95rem;
+      transition: transform 0.15s ease, background 0.2s ease;
     }
-    .btn.primary { background: #38bdf8; color: #0f172a; }
-    .hidden { display: none; }
+    .btn:active { transform: scale(0.98); }
+    .btn:hover { background: rgba(255, 255, 255, 0.12); }
+    .btn.primary {
+      background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+      border: none;
+      color: #ffffff;
+      box-shadow: 0 8px 20px rgba(2, 132, 199, 0.35);
+    }
+    .footer {
+      margin-top: 20px;
+      font-size: 0.72rem;
+      color: #64748b;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
   </style>
 </head>
 <body>
   <div class="card" id="profile">
-    <p>Loading card...</p>
+    <div style="padding: 40px;"><p class="bio">Loading card...</p></div>
   </div>
 
   <script>
@@ -66,34 +110,56 @@
       );
     }
 
+    function downloadVCard(name, bio, phone) {
+      const vcard = [
+        "BEGIN:VCARD",
+        "VERSION:3.0",
+        `FN:${name}`,
+        `TITLE:${bio}`,
+        `TEL;TYPE=CELL:${phone}`,
+        "END:VCARD"
+      ].join("\n");
+      const blob = new Blob([vcard], { type: "text/vcard" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${name.replace(/\s+/g, "_")}.vcf`;
+      a.click();
+    }
+
     fetch(SHEET_CSV_URL)
       .then(res => res.text())
       .then(csv => {
         const rows = parseCSV(csv);
-        const headers = rows[0];
+        const headers = rows[0].map(h => h.toLowerCase());
         const match = rows.slice(1).find(r => r[0] === cardId);
 
         if (!match) {
-          document.getElementById("profile").innerHTML = "<h1>Card Ready to Activate</h1><p>ID: " + cardId + "</p>";
+          document.getElementById("profile").innerHTML = `<div style="padding:40px;"><h1>Card Ready to Activate</h1><p class="bio">ID: ${cardId}</p></div>`;
           return;
         }
 
         const data = {};
         headers.forEach((h, i) => data[h] = match[i] || "");
 
-        document.title = (data.name || "Digital Card") + " - CARD-TAP";
+        document.title = (data.name || "Digital Card") + " • CARD-TAP";
         document.getElementById("profile").innerHTML = `
-          <img class="avatar" src="${data.photo || 'https://via.placeholder.com/150'}" alt="Profile" />
-          <h1>${data.name || "Card #" + cardId}</h1>
-          <p>${data.bio || ""}</p>
-          ${data.phone ? `<a class="btn primary" href="tel:${data.phone}">📞 Call / Save Number</a>` : ""}
-          ${data.facebook ? `<a class="btn" href="${data.facebook}" target="_blank">Facebook</a>` : ""}
-          ${data.tiktok ? `<a class="btn" href="${data.tiktok}" target="_blank">TikTok</a>` : ""}
-          ${data.instagram ? `<a class="btn" href="${data.instagram}" target="_blank">Instagram</a>` : ""}
+          <div class="banner"></div>
+          <div class="content">
+            <img class="avatar" src="${data.photo || 'https://via.placeholder.com/150'}" alt="Profile" />
+            <h1>${data.name || "Card #" + cardId}</h1>
+            <p class="bio">${data.bio || ""}</p>
+            ${data.phone ? `<a class="btn primary" href="javascript:void(0)" onclick="downloadVCard('${data.name.replace(/'/g, "\\'")}', '${data.bio.replace(/'/g, "\\'")}', '${data.phone}')">➕ Save to Contacts</a>` : ""}
+            ${data.phone ? `<a class="btn" href="tel:${data.phone}">📞 Call ${data.phone}</a>` : ""}
+            ${data.facebook ? `<a class="btn" href="${data.facebook}" target="_blank">Facebook</a>` : ""}
+            ${data.tiktok ? `<a class="btn" href="${data.tiktok}" target="_blank">TikTok</a>` : ""}
+            ${data.instagram ? `<a class="btn" href="${data.instagram}" target="_blank">Instagram</a>` : ""}
+            <div class="footer">Powered by CARD-TAP</div>
+          </div>
         `;
       })
       .catch(() => {
-        document.getElementById("profile").innerHTML = "<h1>Error loading profile</h1><p>Check your Google Sheet link.</p>";
+        document.getElementById("profile").innerHTML = `<div style="padding:40px;"><h1>Error loading profile</h1><p class="bio">Check your Google Sheet link.</p></div>`;
       });
   </script>
 </body>
